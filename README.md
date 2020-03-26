@@ -4,6 +4,11 @@
 
 Currently it only extracts all documents of all courses you were enrolled in clip
 
+# Requirements
+
+* Python;
+* `pip install -r requirements.txt`.
+
 # Usage
 ```
 python clip.py username password

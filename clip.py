@@ -25,6 +25,9 @@ transform_path = {
 path = os.getcwd()
 years_href = {}
 courses_href = {}
+if len(argv) < 3:
+    print('Usage: clip.py clip_user clip_password')
+    exit(1)
 credentials = {'identificador':argv[1],'senha':argv[2]}
 #REGEXS
 year_patt = r'<a href="/utente/eu/aluno/ano_lectivo\?aluno=[0-9]*&amp;institui%E7%E3o=[0-9]{5}&amp;ano_lectivo=[0-9]{4}">[0-9]{4}/[0-9]{2}</a>'
@@ -55,10 +58,6 @@ def loadingBar(display, end='\r'):
         __counter__ += 1
     else:
         __counter__ = 0
-
-if len(argv) < 3:
-    print('Usage: clip.py clip_user clip_password')
-    exit(1)
 
 print('Logging in & Getting...' , end='\r')
 r = requests.post(f'{base_url}/utente/eu/aluno', data=credentials)
