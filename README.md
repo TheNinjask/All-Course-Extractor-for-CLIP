@@ -1,8 +1,8 @@
-# All Course Extrator for [CLIP](https://clip.unl.pt)
+# All Course Extractor for [CLIP](https://clip.unl.pt)
  
 # What it does?
 
-Currently it only extracts all documents of all courses you were enrolled in clip
+Currently it only extracts all documents of all courses you were enrolled in [clip](https://clip.unl.pt).
 
 # Requirements
 
