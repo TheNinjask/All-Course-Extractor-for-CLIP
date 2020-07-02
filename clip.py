@@ -31,9 +31,9 @@ if len(argv) < 3:
 credentials = {'identificador':argv[1],'senha':argv[2]}
 #REGEXS
 year_patt = r'<a href="/utente/eu/aluno/ano_lectivo\?aluno=[0-9]*&amp;institui%E7%E3o=[0-9]{5}&amp;ano_lectivo=[0-9]{4}">[0-9]{4}/[0-9]{2}</a>'
-course_patt = r'<a href="/utente/eu/aluno/ano_lectivo/unidades\?ano_lectivo=[0-9]{4}&amp;institui%E7%E3o=[0-9]{5}&amp;aluno=[0-9]{5}&amp;unidade=[0-9]*&amp;tipo_de_per%EDodo_lectivo=[a-z,A-Z]&amp;per%EDodo_lectivo=[0-9]">.*</a>'
-#TODO fix regex below #post note let this bug be here :') #poster note get it deeper in search instead of regex
-course_code_patt = r'(?!<a href="/utente/eu/aluno/ano_lectivo/unidades\?ano_lectivo=[0-9]{4}&amp;institui%E7%E3o=[0-9]{5}&amp;aluno=[0-9]{5}&amp;unidade=)[0-9]*(?=&amp;tipo_de_per%EDodo_lectivo=[a-z,A-Z]&amp;per%EDodo_lectivo=[0-9]">.*</a>)'
+course_patt = r'<a href="/utente/eu/aluno/ano_lectivo/unidades\?ano_lectivo=[0-9]{4}&amp;institui%E7%E3o=[0-9]{5}&amp;aluno=[0-9]{5}&amp;unidade=([0-9]*)&amp;tipo_de_per%EDodo_lectivo=[a-z,A-Z]&amp;per%EDodo_lectivo=[0-9]">.*</a>'
+# DEPRECATED #TODO fix regex below #post note let this bug be here :') #poster note get it deeper in search instead of regex
+#course_code_patt = r'(?!<a href="/utente/eu/aluno/ano_lectivo/unidades\?ano_lectivo=[0-9]{4}&amp;institui%E7%E3o=[0-9]{5}&amp;aluno=[0-9]{5}&amp;unidade=)[0-9]*(?=&amp;tipo_de_per%EDodo_lectivo=[a-z,A-Z]&amp;per%EDodo_lectivo=[0-9]">.*</a>)'
 docs_patt = r'<a href="/utente/eu/aluno/ano_lectivo/unidades/unidade_curricular/actividade/documentos\?tipo_de_per%EDodo_lectivo=[a-z,A-Z]&amp;ano_lectivo=[0-9]{4}&amp;per%EDodo_lectivo=[0-9]&amp;aluno=[0-9]{5}&amp;institui%E7%E3o=97747&amp;unidade_curricular=[0-9]*&amp;tipo_de_documento_de_unidade=.*">.*</a>'
 file_patt = r'<a href="/objecto\?oid=[0-9]*&amp;oin=.*">'
 
@@ -82,7 +82,9 @@ for year, elem in years_href.items():
             hits += 1
             tmp = courses_href.get(sub.text, {})
             tmp[year] = {
-                'codigo': re.findall(course_code_patt, str(sub))[0],
+                #DEPRECATED
+                #'codigo': re.findall(course_code_patt, str(sub))[0],
+                'codigo': re.search(course_patt, str(sub)).group(1),
                 'href': sub['href']
             }
             courses_href[sub.text] = tmp
