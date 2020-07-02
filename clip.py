@@ -59,13 +59,22 @@ def loadingBar(display, end='\r'):
     else:
         __counter__ = 0
 
-print('Logging in & Getting...' , end='\r')
+print('Request Login ...' , end='\r')
 r = requests.post(f'{base_url}/utente/eu/aluno', data=credentials)
 cookies = r.cookies
-print(f'Logged in & Get With {r.status_code}')
+print(f'Request Login With {r.status_code}')
 
 soup = BeautifulSoup(r.content, 'html.parser')
-
+#Check if login failed
+login_succ = True
+for elem in soup.findAll('td'):
+    if elem.get('bgcolor', None)== "#ff0000" or elem.get('bgcolor', None)== '#ffcccc':
+        login_succ = False
+        break
+if not login_succ:
+    print("Login Credentials Invalid!")
+    os.system('pause')
+    exit(1)
 for elem in soup.findAll('a', href=True):
     loadingBar('Checking all years')
     if re.match(year_patt, str(elem)) != None:
