@@ -49,11 +49,15 @@ def load(name=filename):
         return {}
 
 __counter__ = 0
+__last_len_print__ = 0
 def loadingBar(display, end='\r'):
     global __counter__
+    global __last_len_print__
     stringy = ['|','/','-','\\', '|','/','-','\\']
-    print(' '*151, end='\r') #adjust in case not enough
-    print(f'{display} {stringy[__counter__]}', end=end)
+    print(' '*__last_len_print__, end='\r') #Done better
+    new_print = f'{display} {stringy[__counter__]}'
+    __last_len_print__ = len(new_print)
+    print(new_print, end=end)
     if __counter__ < len(stringy)-1:
         __counter__ += 1
     else:
