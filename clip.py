@@ -8,6 +8,7 @@ from threading import Thread
 from bs4 import BeautifulSoup
 from pprint import pprint
 from sys import argv, exit
+from tqdm import tqdm
 
 base_url = 'https://clip.unl.pt'
 filename = 'clipData.json'
@@ -48,6 +49,7 @@ def load(name=filename):
     except Exception as eff:
         return {}
 
+"""
 __counter__ = 0
 __last_len_print__ = 0
 def loadingBar(display, end='\r'):
@@ -62,7 +64,7 @@ def loadingBar(display, end='\r'):
         __counter__ += 1
     else:
         __counter__ = 0
-
+"""
 print('Request Login ...' , end='\r')
 r = requests.post(f'{base_url}/utente/eu/aluno', data=credentials)
 cookies = r.cookies
@@ -70,27 +72,34 @@ print(f'Request Login With {r.status_code}')
 
 soup = BeautifulSoup(r.content, 'html.parser')
 #Check if login failed
-login_succ = True
-for elem in soup.findAll('td'):
-    if elem.get('bgcolor', None)== "#ff0000" or elem.get('bgcolor', None)== '#ffcccc':
-        login_succ = False
-        break
-if not login_succ:
+#login_succ = True
+#for elem in soup.findAll('td'):
+#    if elem.get('bgcolor', None)== "#ff0000" or elem.get('bgcolor', None)== '#ffcccc':
+#        login_succ = False
+#        break
+if len(soup.findAll('td', bgcolor='#ff0000'))>0:
     print("Login Credentials Invalid!")
     os.system('pause')
     exit(1)
-for elem in soup.findAll('a', href=True):
-    loadingBar('Checking all years')
+
+status = tqdm(soup.findAll('a', href=True), desc='Checking all years')
+for elem in status:
+    #loadingBar('Checking all years')
     if re.match(year_patt, str(elem)) != None:
         years_href[elem.text] = elem['href']
-for year, elem in years_href.items():
-    print(f'Extracting {year}: {base_url}{elem} ...', end='\r')
+status = tqdm(years_href.items())
+delayed = []
+for year, elem in status:
+    #print(f'Extracting {year}: {base_url}{elem} ...', end='\r')
+    status.set_description(f'Extracting {year}')
     r = requests.get(f'{base_url}{str(elem)}', cookies=cookies)
-    print(f'Extracted {year}: {base_url}{elem} {" "*10}')
+    status.set_description(f'Extracted {year}')
+    #print(f'Extracted {year}: {base_url}{elem} {" "*10}')
     soup = BeautifulSoup(r.content, 'html.parser')
     hits = 0
     for sub in soup.findAll('a', href=True):
-        loadingBar(f'Parsing {year}')
+        status.set_description(f'Parsing {year}')
+        #loadingBar(f'Parsing {year}')
         if re.match(course_patt, str(sub)) != None:
             hits += 1
             tmp = courses_href.get(sub.text, {})
@@ -101,32 +110,57 @@ for year, elem in years_href.items():
                 'href': sub['href']
             }
             courses_href[sub.text] = tmp
-    print(f'Parsed {year} with {hits} courses')
-for course_name, course_dic in courses_href.items():
+    #status.set_description(f'Parsed {year} with {hits} courses')
+    delayed.append(f'Parsed {year} with {hits} courses')
+    if(len(delayed)==len(status)):
+        status.set_description('All years parsed')
+    #print(f'Parsed {year} with {hits} courses')
+for text in delayed:
+    print(text)
+status = tqdm(courses_href.items())
+counter = 0
+for course_name, course_dic in status:
+    counter += 1
     course_path = os.path.join(path, 'clip', str(course_name).translate(str(course_name).maketrans(transform_path)).strip())
+    status.set_description(f'Checking if course {course_name} folder exists')
     if not os.path.exists(course_path):
+        status.set_description(f'Creating course {course_name} folder')
         os.makedirs(course_path)
     for year, year_data in course_dic.items():
         year_path = os.path.join(course_path, str(year).translate(str(year).maketrans(transform_path)).strip())
+        status.set_description(f'Checking if year {year} folder for course {course_name} exists')
         if not os.path.exists(year_path):
+            status.set_description(f'Creating year {year} folder for course {course_name}')
             os.makedirs(year_path)
+        status.set_description(f'Creating {course_name}({year}) metadata')
         save(year_data, name=os.path.join(year_path, 'metadata.json'))
+        status.set_description(f'Requesting data of {course_name}({year})')
         r = requests.get(f'{base_url}{str(year_data["href"])}', cookies=cookies)
         soup = BeautifulSoup(r.content, 'html.parser')
         for sub in soup.findAll('a', href=True):
-            loadingBar(f'Parsing files from {course_name}({year})')
+            status.set_description(f'Processing {course_name}({year})')
+            #loadingBar(f'Parsing files from {course_name}({year})')
             if re.match(docs_patt, str(sub)) != None:
+                section_name = sub.text
                 docs_path = os.path.join(year_path, sub.text)
+                status.set_description(f'Checking if {section_name} folder of {course_name}({year}) exists')
                 if not os.path.exists(docs_path):
+                    status.set_description(f'Creating {section_name} folder for {course_name}({year})')
                     os.makedirs(docs_path)
+                status.set_description(f'Requesting {section_name} of {course_name}({year})')
                 r = requests.get(f'{base_url}{str(sub["href"])}', cookies=cookies)
                 soup = BeautifulSoup(r.content, 'html.parser')
                 for sub in soup.findAll('a', href=True):
-                    loadingBar(f'Parsing files from {course_name}({year})')
+                    status.set_description(f'Processing files from {section_name} of {course_name}({year})')
+                    #loadingBar(f'Parsing files from {course_name}({year})')
                     if re.match(file_patt, str(sub)) != None:
-                        r = requests.get(f'{base_url}{str(sub["href"])}', cookies=cookies)
                         file_name = str(sub.parent.parent.findChildren("td")[0].text).strip()
+                        status.set_description(f'Requesting {file_name} in {section_name} of {course_name}({year})')
+                        r = requests.get(f'{base_url}{str(sub["href"])}', cookies=cookies)
+                        status.set_description(f'Saving {file_name} in {section_name} of {course_name}({year})')
                         open(os.path.join(docs_path, file_name.translate(file_name.maketrans(transform_path))), 'wb').write(r.content)
-print(' '*151, end='\r')
-print('Extraction Complete!')
+    if(counter == len(status)):
+        status.set_description('Extraction Complete!')
+#print(' '*151, end='\r')
+#print('Extraction Complete!')
 os.system('pause')
