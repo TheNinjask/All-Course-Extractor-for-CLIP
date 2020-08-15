@@ -38,11 +38,11 @@ course_patt = r'<a href="/utente/eu/aluno/ano_lectivo/unidades\?ano_lectivo=[0-9
 docs_patt = r'<a href="/utente/eu/aluno/ano_lectivo/unidades/unidade_curricular/actividade/documentos\?tipo_de_per%EDodo_lectivo=[a-z,A-Z]&amp;ano_lectivo=[0-9]{4}&amp;per%EDodo_lectivo=[0-9]&amp;aluno=[0-9]{5}&amp;institui%E7%E3o=97747&amp;unidade_curricular=[0-9]*&amp;tipo_de_documento_de_unidade=.*">.*</a>'
 file_patt = r'<a href="/objecto\?oid=[0-9]*&amp;oin=.*">'
 
-def save(data: dict, name=filename):
+def save(data: dict, name:str):
     with open(name, 'w') as outfile:
         json.dump(data, outfile)
 
-def load(name=filename) -> dict:
+def load(name:str) -> dict:
     try:
         with open(name) as infile:
             return json.load(infile)
