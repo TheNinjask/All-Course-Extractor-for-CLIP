@@ -1,9 +1,10 @@
 import os
+import re
 import json
 import time
 import random
+import argparse
 import requests
-import re
 from threading import Thread
 from bs4 import BeautifulSoup
 from pprint import pprint
@@ -23,13 +24,28 @@ transform_path = {
     '>': '_',
     '|': '_'
 }
-path = os.getcwd()
-years_href = {}
-courses_href = {}
+
+parser = argparse.ArgumentParser(description='Extracts all documents of all courses you were enrolled in [clip](https://clip.unl.pt)')
+parser.add_argument('clip_user', type=str, help='Username for clip')
+parser.add_argument('clip_password', type=str, help='Password of username')
+parser.add_argument('-oy', '--only_year', nargs='*', help='Only year(s) to extract e.g.: -oy 2019/20 or -oy 2019/2020 2020/2021')
+parser.add_argument('-oc', '--only_course', nargs='*', help='Only course(s) to extract (e.g. similar to -oy)')
+
+"""
+@Deprecated
 if len(argv) < 3:
     print('Usage: clip.py clip_user clip_password')
     exit(1)
-credentials = {'identificador':argv[1],'senha':argv[2]}
+"""
+years_href = {}
+courses_href = {}
+path = os.getcwd()
+
+credentials = {'identificador':parser.parse_args().clip_user,'senha':parser.parse_args().clip_password}
+
+only_course_name = parser.parse_args().only_course
+only_year = parser.parse_args().only_year
+
 #REGEXS
 year_patt = r'<a href="/utente/eu/aluno/ano_lectivo\?aluno=[0-9]*&amp;institui%E7%E3o=[0-9]{5}&amp;ano_lectivo=[0-9]{4}">[0-9]{4}/[0-9]{2}</a>'
 course_patt = r'<a href="/utente/eu/aluno/ano_lectivo/unidades\?ano_lectivo=[0-9]{4}&amp;institui%E7%E3o=[0-9]{5}&amp;aluno=[0-9]{5}&amp;unidade=([0-9]*)&amp;tipo_de_per%EDodo_lectivo=[a-z,A-Z]&amp;per%EDodo_lectivo=[0-9]">.*</a>'
@@ -90,6 +106,8 @@ for elem in status:
 status = tqdm(years_href.items())
 delayed = []
 for year, elem in status:
+    if only_year != None and not year in only_year:
+        continue
     #print(f'Extracting {year}: {base_url}{elem} ...', end='\r')
     status.set_description(f'Extracting {year}')
     r = requests.get(f'{base_url}{str(elem)}', cookies=cookies)
@@ -120,6 +138,8 @@ for text in delayed:
 status = tqdm(courses_href.items())
 counter = 0
 for course_name, course_dic in status:
+    if only_course_name != None and not course_name in only_course_name:
+        continue
     counter += 1
     course_path = os.path.join(path, 'clip', str(course_name).translate(str(course_name).maketrans(transform_path)).strip())
     status.set_description(f'Checking if course {course_name} folder exists')
