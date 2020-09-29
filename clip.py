@@ -25,18 +25,25 @@ transform_path = {
     '|': '_'
 }
 
+def extract_mine():
+    pass
+
+def extract_general():
+    pass
+
+
+modes = {
+    'mine': extract_mine,
+    'general': extract_general
+}
+
 parser = argparse.ArgumentParser(description='Extracts all documents of all courses you were enrolled in [clip](https://clip.unl.pt)')
 parser.add_argument('clip_user', type=str, help='Username for clip')
 parser.add_argument('clip_password', type=str, help='Password of username')
+parser.add_argument('-m', '--mode', nargs=1, default=extract_mine, choices=modes.keys(), help='Mode for extraction')
 parser.add_argument('-oy', '--only_year', nargs='*', help='Only year(s) to extract e.g.: -oy 2019/20 or -oy 2019/2020 2020/2021')
 parser.add_argument('-oc', '--only_course', nargs='*', help='Only course(s) to extract (e.g. similar to -oy)')
 
-"""
-@Deprecated
-if len(argv) < 3:
-    print('Usage: clip.py clip_user clip_password')
-    exit(1)
-"""
 years_href = {}
 courses_href = {}
 path = os.getcwd()
@@ -65,22 +72,6 @@ def load(name:str) -> dict:
     except Exception as eff:
         return {}
 
-"""
-__counter__ = 0
-__last_len_print__ = 0
-def loadingBar(display, end='\r'):
-    global __counter__
-    global __last_len_print__
-    stringy = ['|','/','-','\\', '|','/','-','\\']
-    print(' '*__last_len_print__, end='\r') #Done better
-    new_print = f'{display} {stringy[__counter__]}'
-    __last_len_print__ = len(new_print)
-    print(new_print, end=end)
-    if __counter__ < len(stringy)-1:
-        __counter__ += 1
-    else:
-        __counter__ = 0
-"""
 print('Request Login ...' , end='\r')
 r = requests.post(f'{base_url}/utente/eu/aluno', data=credentials)
 cookies = r.cookies
@@ -100,7 +91,6 @@ if len(soup.findAll('td', bgcolor='#ff0000'))>0:
 
 status = tqdm(soup.findAll('a', href=True), desc='Checking all years')
 for elem in status:
-    #loadingBar('Checking all years')
     if re.match(year_patt, str(elem)) != None:
         years_href[elem.text] = elem['href']
 status = tqdm(years_href.items())
@@ -108,16 +98,13 @@ delayed = []
 for year, elem in status:
     if only_year != None and not year in only_year:
         continue
-    #print(f'Extracting {year}: {base_url}{elem} ...', end='\r')
     status.set_description(f'Extracting {year}')
     r = requests.get(f'{base_url}{str(elem)}', cookies=cookies)
     status.set_description(f'Extracted {year}')
-    #print(f'Extracted {year}: {base_url}{elem} {" "*10}')
     soup = BeautifulSoup(r.content, 'html.parser')
     hits = 0
     for sub in soup.findAll('a', href=True):
         status.set_description(f'Parsing {year}')
-        #loadingBar(f'Parsing {year}')
         if re.match(course_patt, str(sub)) != None:
             hits += 1
             tmp = courses_href.get(sub.text, {})
@@ -128,11 +115,9 @@ for year, elem in status:
                 'href': sub['href']
             }
             courses_href[sub.text] = tmp
-    #status.set_description(f'Parsed {year} with {hits} courses')
     delayed.append(f'Parsed {year} with {hits} courses')
     if(len(delayed)==len(status)):
         status.set_description('All years parsed')
-    #print(f'Parsed {year} with {hits} courses')
 for text in delayed:
     print(text)
 status = tqdm(courses_href.items())
@@ -159,7 +144,6 @@ for course_name, course_dic in status:
         soup = BeautifulSoup(r.content, 'html.parser')
         for sub in soup.findAll('a', href=True):
             status.set_description(f'Processing {course_name}({year})')
-            #loadingBar(f'Parsing files from {course_name}({year})')
             if re.match(docs_patt, str(sub)) != None:
                 section_name = sub.text
                 docs_path = os.path.join(year_path, sub.text)
@@ -172,7 +156,6 @@ for course_name, course_dic in status:
                 soup = BeautifulSoup(r.content, 'html.parser')
                 for sub in soup.findAll('a', href=True):
                     status.set_description(f'Processing files from {section_name} of {course_name}({year})')
-                    #loadingBar(f'Parsing files from {course_name}({year})')
                     if re.match(file_patt, str(sub)) != None:
                         file_name = str(sub.parent.parent.findChildren("td")[0].text).strip()
                         status.set_description(f'Requesting {file_name} in {section_name} of {course_name}({year})')
@@ -181,6 +164,4 @@ for course_name, course_dic in status:
                         open(os.path.join(docs_path, file_name.translate(file_name.maketrans(transform_path))), 'wb').write(r.content)
     if(counter == len(status)):
         status.set_description('Extraction Complete!')
-#print(' '*151, end='\r')
-#print('Extraction Complete!')
 os.system('pause')
