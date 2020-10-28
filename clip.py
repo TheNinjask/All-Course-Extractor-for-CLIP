@@ -163,6 +163,6 @@ if len(soup.findAll('td', bgcolor='#ff0000'))>0:
     os.system('pause')
     exit(1)
 
-modes.get(parser.parse_args().mode, extract_mine)(soup, only_course_name, only_year)
+modes.get(parser.parse_args().mode)(soup, only_course_name, only_year)
 
 os.system('pause')
